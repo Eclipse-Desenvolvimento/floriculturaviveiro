@@ -140,14 +140,41 @@ const petalPath = "M30 5 C 45 15, 55 30, 30 55 C 5 30, 15 15, 30 5 Z";
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLElement>(null);
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 80);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  // Bloquear scroll quando menu aberto
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   const links = [
-    ["#inicio", "Início"],
-    ["#sobre", "Nossa História"],
+    ["#inicio", "Inicio"],
+    ["#sobre", "Nossa Historia"],
     ["#produtos", "Produtos"],
     ["#rosa-eterna", "Rosa Eterna"],
     ["#como-pedir", "Como Pedir"],
@@ -161,10 +188,10 @@ function Nav() {
           : "bg-transparent"
       }`}
     >
-      <div className="mx-auto max-w-[1280px] px-5 md:px-10 h-20 flex items-center justify-between">
+      <div className="mx-auto max-w-[1280px] px-4 md:px-10 h-16 md:h-20 flex items-center justify-between">
         <a
           href="#inicio"
-          className="flex items-center gap-3"
+          className="flex items-center gap-2 md:gap-3"
           aria-label="Viveiro Palmas"
         >
           <img
@@ -172,16 +199,16 @@ function Nav() {
             alt="Logo Viveiro Palmas"
             width={48}
             height={48}
-            className="w-11 h-11 md:w-12 md:h-12 rounded-full object-cover shadow-md"
+            className="w-9 h-9 md:w-12 md:h-12 rounded-full object-cover shadow-md"
           />
           <span className="hidden sm:flex flex-col leading-none">
             <span
-              className="text-lg md:text-xl tracking-wide"
+              className="text-base md:text-xl tracking-wide"
               style={{ fontFamily: "var(--font-display)", fontWeight: 500 }}
             >
               Viveiro Palmas
             </span>
-            <span className="label-eyebrow text-[9px] text-muted-foreground mt-1">
+            <span className="label-eyebrow text-[8px] md:text-[9px] text-muted-foreground mt-0.5 md:mt-1">
               Floricultura · Est. 1998
             </span>
           </span>
@@ -207,52 +234,92 @@ function Nav() {
           WhatsApp
         </a>
         <button
-          aria-label="Abrir menu"
+          aria-label={open ? "Fechar menu" : "Abrir menu"}
           onClick={() => setOpen(!open)}
-          className="lg:hidden p-2 -mr-2"
+          className="lg:hidden flex flex-col justify-center items-center w-10 h-10 -mr-2"
         >
-          <div
-            className="w-6 h-[1px] bg-foreground mb-1.5 transition-transform"
-            style={{ transform: open ? "rotate(45deg) translateY(6px)" : "" }}
+          <span
+            className={`block w-5 h-[2px] bg-foreground rounded-full transition-all duration-300 ease-out ${
+              open ? "rotate-45 translate-y-[6px]" : ""
+            }`}
           />
-          <div
-            className="w-6 h-[1px] bg-foreground transition-opacity"
-            style={{ opacity: open ? 0 : 1 }}
+          <span
+            className={`block w-5 h-[2px] bg-foreground rounded-full my-[4px] transition-all duration-300 ease-out ${
+              open ? "opacity-0 scale-x-0" : ""
+            }`}
           />
-          <div
-            className="w-6 h-[1px] bg-foreground mt-1.5 transition-transform"
-            style={{ transform: open ? "rotate(-45deg) translateY(-6px)" : "" }}
+          <span
+            className={`block w-5 h-[2px] bg-foreground rounded-full transition-all duration-300 ease-out ${
+              open ? "-rotate-45 -translate-y-[6px]" : ""
+            }`}
           />
         </button>
       </div>
       {/* Mobile drawer */}
       <div
-        className={`lg:hidden fixed inset-0 z-40 transition-opacity ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        className={`lg:hidden fixed inset-0 z-40 transition-all duration-300 ease-out ${
+          open ? "opacity-100 visible" : "opacity-0 invisible"
+        }`}
+        style={{ top: 0 }}
       >
         <div
-          className="absolute inset-0 bg-dark/60"
+          className={`absolute inset-0 bg-dark/70 backdrop-blur-sm transition-opacity duration-300 ${
+            open ? "opacity-100" : "opacity-0"
+          }`}
           onClick={() => setOpen(false)}
         />
-        <aside className="absolute right-0 top-0 h-full w-[80%] max-w-sm bg-background p-8 pt-24 flex flex-col gap-6">
-          {links.map(([href, label]) => (
-            <a
-              key={href}
-              href={href}
-              onClick={() => setOpen(false)}
-              className="text-2xl font-display"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              {label}
-            </a>
-          ))}
-          <a
-            href={WA_FLORES}
-            target="_blank"
-            rel="noopener"
-            className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-secondary text-secondary-foreground px-5 py-3"
-          >
-            <WhatsAppIcon className="w-4 h-4" /> Fazer pedido
-          </a>
+        <aside
+          ref={menuRef}
+          className={`absolute right-0 top-0 h-full w-[85%] max-w-[320px] bg-background shadow-2xl transition-transform duration-300 ease-out ${
+            open ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          <div className="flex flex-col h-full overflow-y-auto overscroll-contain">
+            <div className="flex items-center justify-between p-4 border-b border-border/50">
+              <span
+                className="text-lg"
+                style={{ fontFamily: "var(--font-display)", fontWeight: 500 }}
+              >
+                Menu
+              </span>
+              <button
+                onClick={() => setOpen(false)}
+                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                aria-label="Fechar menu"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <nav className="flex-1 p-6 flex flex-col gap-1">
+              {links.map(([href, label], i) => (
+                <a
+                  key={href}
+                  href={href}
+                  onClick={() => setOpen(false)}
+                  className="py-3 px-4 text-lg rounded-lg hover:bg-muted transition-colors"
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    animationDelay: open ? `${i * 50}ms` : "0ms",
+                  }}
+                >
+                  {label}
+                </a>
+              ))}
+            </nav>
+            <div className="p-6 pt-0 border-t border-border/50 mt-auto">
+              <a
+                href={WA_FLORES}
+                target="_blank"
+                rel="noopener"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-center gap-2 w-full rounded-full bg-secondary text-secondary-foreground px-5 py-4 text-sm font-medium hover:opacity-90 transition"
+              >
+                <WhatsAppIcon className="w-5 h-5" /> Fazer pedido
+              </a>
+            </div>
+          </div>
         </aside>
       </div>
     </header>
@@ -1014,6 +1081,88 @@ const CAT_IMG: Record<string, string> = {
   mensageiro: catMensageiro,
 };
 
+// Versao compacta do carrossel para mobile - cards menores
+function ProductCarouselCompact({ product }: { product: Produto }) {
+  const images = product.images ?? [];
+  const [current, setCurrent] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+  const hasImages = images.length > 0;
+  const hasMultiple = images.length > 1;
+
+  useEffect(() => {
+    setCurrent(0);
+  }, [images.join("|")]);
+
+  const goTo = (index: number) => {
+    if (!hasImages) return;
+    setCurrent((index + images.length) % images.length);
+  };
+
+  const onTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = event.touches[0]?.clientX ?? null;
+  };
+
+  const onTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    if (touchStartX.current == null || !hasMultiple) return;
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    const delta = touch.clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(delta) < 30) return;
+    goTo(current + (delta < 0 ? 1 : -1));
+  };
+
+  return (
+    <div
+      className="mb-2 sm:mb-4 relative aspect-square sm:aspect-[4/3] overflow-hidden rounded-md border border-background/10 bg-gradient-to-br from-background/[0.08] via-background/[0.04] to-primary/[0.08] shadow-[0_8px_30px_-20px_rgba(0,0,0,0.5)]"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
+      {hasImages ? (
+        <div
+          className="flex h-full transition-transform duration-500 ease-out"
+          style={{ transform: `translateX(-${current * 100}%)` }}
+        >
+          {images.map((src, index) => (
+            <div key={src} className="min-w-full h-full p-1.5 sm:p-3">
+              <img
+                src={src}
+                alt={`${product.name} - foto ${index + 1}`}
+                loading="lazy"
+                className="h-full w-full object-contain transition duration-700 group-hover:scale-[1.02]"
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(200,168,130,0.22),transparent_35%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(200,168,130,0.04))]">
+          <div className="absolute inset-x-3 bottom-3 h-px bg-primary/25" />
+          <div className="absolute left-3 bottom-3 h-8 w-px bg-primary/20" />
+          <div className="absolute right-3 top-3 h-5 w-5 rounded-full border border-primary/20" />
+        </div>
+      )}
+
+      {hasMultiple && (
+        <div className="absolute inset-x-0 bottom-1.5 sm:bottom-2 flex justify-center gap-1">
+          {images.map((src, index) => (
+            <button
+              key={src}
+              type="button"
+              aria-label={`Ver imagem ${index + 1} de ${product.name}`}
+              onClick={() => goTo(index)}
+              className={`h-1 sm:h-1.5 rounded-full transition-all ${
+                index === current
+                  ? "w-3 sm:w-4 bg-primary"
+                  : "w-1 sm:w-1.5 bg-background/40 hover:bg-background/60"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProductCarousel({ product }: { product: Produto }) {
   const images = product.images ?? [];
   const [current, setCurrent] = useState(0);
@@ -1119,16 +1268,15 @@ function ProductCarousel({ product }: { product: Produto }) {
 }
 
 function ProdutosCatalogo() {
-  const [active, setActive] = useState<string>("todos");
+  const [active, setActive] = useState<string>(catalogoCategorias[0]?.slug ?? "");
   const visiveis = useMemo(() => {
-    if (active === "todos") return catalogoCategorias;
     return catalogoCategorias.filter((c) => c.slug === active);
   }, [active]);
 
   return (
     <section
       id="produtos"
-      className="relative bg-dark text-background py-16 md:py-32 px-5 md:px-10 overflow-hidden"
+      className="relative bg-dark text-background py-12 md:py-32 px-3 sm:px-5 md:px-10 overflow-hidden"
     >
       <div
         className="absolute inset-0 opacity-[0.06]"
@@ -1139,46 +1287,43 @@ function ProdutosCatalogo() {
         }}
       />
       <div className="relative mx-auto max-w-[1280px]">
-        <div className="text-center max-w-2xl mx-auto reveal">
-          <p className="label-eyebrow text-primary">— Coleção —</p>
-          <h2 className="mt-4 text-5xl md:text-7xl">Nossos Produtos</h2>
-          <p className="mt-6 text-background/70">
-            Composições únicas para cada momento — montadas à mão, entregues com
+        <div className="text-center max-w-2xl mx-auto reveal px-2">
+          <p className="label-eyebrow text-primary">— Colecao —</p>
+          <h2 className="mt-4 text-3xl sm:text-5xl md:text-7xl">Nossos Produtos</h2>
+          <p className="mt-4 md:mt-6 text-sm md:text-base text-background/70">
+            Composicoes unicas para cada momento — montadas a mao, entregues com
             amor. Toque em{" "}
-            <span className="text-primary">"Quero este produto"</span> e fale
+            <span className="text-primary">&quot;Quero este produto&quot;</span> e fale
             direto com a loja no WhatsApp.
           </p>
         </div>
 
         {/* Filtro de categorias */}
-        <div className="mt-12 flex flex-wrap justify-center gap-2 md:gap-3">
-          {[
-            { slug: "todos", name: "Todos" },
-            ...catalogoCategorias.map((c) => ({ slug: c.slug, name: c.name })),
-          ].map((t) => {
-            const isActive = active === t.slug;
+        <div className="mt-8 md:mt-12 flex flex-wrap justify-center gap-1.5 sm:gap-2 md:gap-3 px-1">
+          {catalogoCategorias.map((c) => {
+            const isActive = active === c.slug;
             return (
               <button
-                key={t.slug}
-                onClick={() => setActive(t.slug)}
-                className={`px-4 py-2 rounded-full text-xs md:text-sm border transition-all ${
+                key={c.slug}
+                onClick={() => setActive(c.slug)}
+                className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[10px] sm:text-xs md:text-sm border transition-all ${
                   isActive
                     ? "bg-primary text-dark border-primary"
                     : "border-background/20 text-background/70 hover:border-primary hover:text-primary"
                 }`}
               >
-                {t.name}
+                {c.name}
               </button>
             );
           })}
         </div>
 
-        <div className="mt-14 space-y-20">
+        <div className="mt-8 md:mt-14 space-y-12 md:space-y-20">
           {visiveis.map((cat) => (
             <div key={cat.slug} className="reveal">
-              {/* Cabeçalho de categoria */}
-              <div className="grid md:grid-cols-[1fr_2fr] gap-6 md:gap-8 items-end mb-8 md:mb-10">
-                <div className="relative aspect-[16/9] md:aspect-[3/4] overflow-hidden rounded-lg">
+              {/* Cabecalho de categoria */}
+              <div className="grid md:grid-cols-[1fr_2fr] gap-4 md:gap-8 items-end mb-6 md:mb-10">
+                <div className="relative aspect-[2/1] sm:aspect-[16/9] md:aspect-[3/4] overflow-hidden rounded-lg">
                   <img
                     src={CAT_IMG[cat.slug] ?? catBuques}
                     alt={cat.name}
@@ -1186,12 +1331,12 @@ function ProdutosCatalogo() {
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-dark/80 via-transparent to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4 md:bottom-5 md:left-5 md:right-5">
-                    <p className="label-eyebrow text-primary text-[10px]">
+                  <div className="absolute bottom-3 left-3 right-3 md:bottom-5 md:left-5 md:right-5">
+                    <p className="label-eyebrow text-primary text-[9px] md:text-[10px]">
                       Categoria
                     </p>
                     <h3
-                      className="mt-2 text-2xl md:text-4xl text-background"
+                      className="mt-1 md:mt-2 text-xl sm:text-2xl md:text-4xl text-background"
                       style={{ fontFamily: "var(--font-display)" }}
                     >
                       {cat.name}
@@ -1199,64 +1344,77 @@ function ProdutosCatalogo() {
                   </div>
                 </div>
                 <div className="min-w-0">
-                  <p className="font-italic-serif text-lg sm:text-xl md:text-3xl text-background/85 leading-snug break-words hyphens-auto">
+                  <p className="font-italic-serif text-base sm:text-lg md:text-3xl text-background/85 leading-snug break-words hyphens-auto">
                     {cat.tagline}
                   </p>
-                  <div className="mt-4 h-px w-20 md:w-24 bg-primary/40" />
+                  <div className="mt-3 md:mt-4 h-px w-16 md:w-24 bg-primary/40" />
                 </div>
               </div>
 
-              {/* Grid de produtos */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 items-stretch">
+              {/* Grid de produtos - 3 colunas no mobile */}
+              <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 md:gap-5 items-stretch">
                 {cat.products.map((p, productIndex) => (
                   <article
                     key={`${cat.slug}-${p.name}-${productIndex}`}
-                    className="group flex h-full min-w-0 flex-col justify-between rounded-lg border border-background/10 bg-background/[0.035] p-4 shadow-[0_18px_60px_-48px_rgba(0,0,0,0.8)] backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-background/[0.06] hover:shadow-[0_28px_80px_-52px_rgba(0,0,0,0.9)] sm:p-5 md:p-6"
+                    className="group flex h-full min-w-0 flex-col justify-between rounded-md sm:rounded-lg border border-background/10 bg-background/[0.035] p-2 sm:p-3 md:p-5 shadow-[0_18px_60px_-48px_rgba(0,0,0,0.8)] backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-background/[0.06] hover:shadow-[0_28px_80px_-52px_rgba(0,0,0,0.9)]"
                   >
                     <div className="min-w-0">
-                      <ProductCarousel product={p} />
+                      <ProductCarouselCompact product={p} />
                       <h4
-                        className="text-lg md:text-xl text-background leading-tight break-words"
+                        className="text-[11px] sm:text-sm md:text-lg text-background leading-tight break-words line-clamp-2"
                         style={{ fontFamily: "var(--font-display)" }}
                       >
                         {p.name}
                       </h4>
-                      <p className="mt-3 text-sm text-background/65 leading-relaxed break-words">
+                      <p className="hidden sm:block mt-2 text-xs md:text-sm text-background/65 leading-relaxed break-words line-clamp-2">
                         {p.desc}
                       </p>
                       {p.note && (
-                        <p className="mt-3 text-[11px] italic text-background/40 leading-relaxed break-words">
+                        <p className="hidden md:block mt-2 text-[10px] italic text-background/40 leading-relaxed break-words line-clamp-2">
                           {p.note}
                         </p>
                       )}
                     </div>
 
-                    <div className="mt-5 space-y-2">
-                      {p.variants.map((v) => (
+                    <div className="mt-2 sm:mt-4 space-y-1 sm:space-y-2">
+                      {p.variants.map((v, vIndex) => (
                         <a
                           key={v.label}
                           href={waLinkFor(p, v)}
                           target="_blank"
                           rel="noopener"
-                          className="flex min-h-[58px] items-center justify-between gap-3 rounded-md border border-background/10 px-3 py-2.5 transition-all hover:border-primary hover:bg-primary/10 sm:px-4 sm:py-3"
+                          className={`flex min-h-[36px] sm:min-h-[48px] md:min-h-[58px] items-center justify-between gap-1 sm:gap-3 rounded-md border border-background/10 px-1.5 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-3 transition-all hover:border-primary hover:bg-primary/10 ${
+                            vIndex > 0 ? "hidden sm:flex" : ""
+                          }`}
                         >
                           <div className="min-w-0">
-                            <p className="text-[10px] sm:text-[11px] uppercase tracking-widest text-background/50 truncate">
+                            <p className="text-[8px] sm:text-[10px] md:text-[11px] uppercase tracking-wider text-background/50 truncate">
                               {v.label}
                             </p>
                             <p
-                              className="text-base text-primary"
+                              className="text-[11px] sm:text-sm md:text-base text-primary"
                               style={{ fontFamily: "var(--font-display)" }}
                             >
                               {formatBRL(v.price)}
                             </p>
                           </div>
-                          <span className="shrink-0 text-[10px] label-eyebrow text-background/60 group-hover:text-primary flex items-center gap-1">
-                            <span className="hidden sm:inline">Quero este</span>
+                          <span className="shrink-0 text-[8px] sm:text-[10px] label-eyebrow text-background/60 group-hover:text-primary flex items-center gap-0.5">
+                            <span className="hidden md:inline">Quero</span>
                             <span aria-hidden>→</span>
                           </span>
                         </a>
                       ))}
+                      {/* Mobile: mostrar mais opcoes */}
+                      {p.variants.length > 1 && (
+                        <a
+                          href={waLinkFor(p, p.variants[0])}
+                          target="_blank"
+                          rel="noopener"
+                          className="sm:hidden flex items-center justify-center text-[9px] text-primary/70 py-1"
+                        >
+                          +{p.variants.length - 1} opcoes
+                        </a>
+                      )}
                     </div>
                   </article>
                 ))}
